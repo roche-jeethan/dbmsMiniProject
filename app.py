@@ -70,14 +70,20 @@ def login():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    if isinstance(current_user, Admin):
-        lecturers = Lecturer.query.all()
-        courses = Course.query.all()
-        return render_template('dashboard.html', lecturers=lecturers, courses=courses, is_admin=True)
-    else:
-        # For lecturers, only show their assigned courses
-        courses = Course.query.filter_by(lecturer_id=current_user.id).all()
-        return render_template('dashboard.html', courses=courses, is_admin=False)
+    try:
+        if isinstance(current_user, Admin):
+            courses = Course.query.all()
+            return render_template('dashboard.html', courses=courses, is_admin=True)
+        else:
+            # Add debug logging
+            print(f"Lecturer ID: {current_user.id}")
+            courses = Course.query.filter_by(lecturer_id=current_user.id).all()
+            print(f"Found courses: {[course.name for course in courses]}")
+            return render_template('dashboard.html', courses=courses, is_admin=False)
+    except Exception as e:
+        print(f"Error in dashboard: {str(e)}")
+        flash('Error loading courses', 'error')
+        return render_template('dashboard.html', courses=[], is_admin=False)
 
 @app.route('/scan/<int:course_id>')
 @login_required
