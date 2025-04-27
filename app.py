@@ -8,6 +8,7 @@ import os
 from datetime import datetime, timedelta
 import io
 import random
+from flask_migrate import Migrate
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'  # Change this in production
@@ -16,6 +17,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize extensions
 db.init_app(app)
+migrate = Migrate(app, db)
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -40,17 +43,28 @@ def login():
         password = request.form.get('password')
         user_type = request.form.get('user_type')
 
+        if not all([email, password, user_type]):
+            flash('Please fill in all fields')
+            return render_template('login.html')
+
         user = None
         if user_type == 'admin':
             user = Admin.query.filter_by(email=email).first()
+            if not user:
+                flash('Admin account not found')
+                return render_template('login.html')
         else:
             user = Lecturer.query.filter_by(email=email).first()
+            if not user:
+                flash('Lecturer account not found')
+                return render_template('login.html')
 
         if user and check_password_hash(user.password, password):
             login_user(user)
             return redirect(url_for('dashboard'))
-        
-        flash('Invalid credentials')
+        else:
+            flash('Invalid password')
+            
     return render_template('login.html')
 
 @app.route('/dashboard')
@@ -316,6 +330,92 @@ def manage_students(course_id):
         
     students = Student.query.filter_by(course_id=course_id).all()
     return render_template('manage_students.html', course=course, students=students)
+
+@app.route('/manage_lecturers', methods=['GET', 'POST'])
+@login_required
+def manage_lecturers():
+    if not isinstance(current_user, Admin):
+        flash('Unauthorized access')
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        name = request.form.get('name')
+        email = request.form.get('email')
+        department = request.form.get('department')
+        password = generate_password_hash('lecturer123')  # Default password
+        
+        lecturer = Lecturer(name=name, email=email, password=password, department=department)
+        db.session.add(lecturer)
+        db.session.commit()
+        flash('Lecturer added successfully')
+        
+    lecturers = Lecturer.query.all()
+    return render_template('manage_lecturers.html', lecturers=lecturers)
+
+@app.route('/edit_lecturer/<int:lecturer_id>', methods=['GET', 'POST'])
+@login_required
+def edit_lecturer(lecturer_id):
+    if not isinstance(current_user, Admin):
+        flash('Unauthorized access')
+        return redirect(url_for('dashboard'))
+        
+    lecturer = Lecturer.query.get_or_404(lecturer_id)
+    
+    if request.method == 'POST':
+        lecturer.name = request.form.get('name')
+        lecturer.email = request.form.get('email')
+        lecturer.department = request.form.get('department')
+        db.session.commit()
+        flash('Lecturer updated successfully')
+        return redirect(url_for('manage_lecturers'))
+        
+    return render_template('edit_lecturer.html', lecturer=lecturer)
+
+@app.route('/delete_lecturer/<int:lecturer_id>')
+@login_required
+def delete_lecturer(lecturer_id):
+    if not isinstance(current_user, Admin):
+        flash('Unauthorized access')
+        return redirect(url_for('dashboard'))
+        
+    lecturer = Lecturer.query.get_or_404(lecturer_id)
+    db.session.delete(lecturer)
+    db.session.commit()
+    flash('Lecturer deleted successfully')
+    return redirect(url_for('manage_lecturers'))
+
+@app.route('/delete_student/<int:student_id>')
+@login_required
+def delete_student(student_id):
+    student = Student.query.get_or_404(student_id)
+    course_id = student.course_id
+    
+    if not isinstance(current_user, Admin) and student.course.lecturer_id != current_user.id:
+        flash('Unauthorized access')
+        return redirect(url_for('dashboard'))
+        
+    db.session.delete(student)
+    db.session.commit()
+    flash('Student deleted successfully')
+    return redirect(url_for('manage_students', course_id=course_id))
+
+@app.route('/edit_student/<int:student_id>', methods=['GET', 'POST'])
+@login_required
+def edit_student(student_id):
+    student = Student.query.get_or_404(student_id)
+    
+    if not isinstance(current_user, Admin) and student.course.lecturer_id != current_user.id:
+        flash('Unauthorized access')
+        return redirect(url_for('dashboard'))
+        
+    if request.method == 'POST':
+        student.name = request.form.get('name')
+        student.roll_number = request.form.get('roll_number')
+        db.session.commit()
+        flash('Student updated successfully')
+        return redirect(url_for('manage_students', course_id=student.course_id))
+        
+    return render_template('edit_student.html', student=student)
 
 if __name__ == '__main__':
     with app.app_context():

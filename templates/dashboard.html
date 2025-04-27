@@ -22,15 +22,9 @@
         
         {% if is_admin %}
             <div class="admin-section">
-                <h3>Lecturers</h3>
-                <div class="card-grid">
-                    {% for lecturer in lecturers %}
-                        <div class="card">
-                            <h4>{{ lecturer.name }}</h4>
-                            <p>Department: {{ lecturer.department }}</p>
-                            <p>Email: {{ lecturer.email }}</p>
-                        </div>
-                    {% endfor %}
+                <h3>Administration</h3>
+                <div class="admin-actions">
+                    <a href="{{ url_for('manage_lecturers') }}" class="button">Manage Lecturers</a>
                 </div>
             </div>
         {% endif %}

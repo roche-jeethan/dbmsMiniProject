@@ -13,6 +13,8 @@ ENV/
 # VSCode settings (if you use it)
 .vscode/
 
+migrations/
+
 # Python packaging artifacts
 build/
 dist/

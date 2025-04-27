@@ -15,15 +15,15 @@ class Lecturer(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     department = db.Column(db.String(100), nullable=False)
-    courses = db.relationship('Course', backref='lecturer', lazy=True)
+    courses = db.relationship('Course', backref='lecturer', lazy=True, cascade='all, delete-orphan')
 
 class Course(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     year = db.Column(db.Integer, nullable=False)
     section = db.Column(db.String(10), nullable=False)
-    lecturer_id = db.Column(db.Integer, db.ForeignKey('lecturer.id'), nullable=False)
-    students = db.relationship('Student', backref='course', lazy=True)
+    lecturer_id = db.Column(db.Integer, db.ForeignKey('lecturer.id', ondelete='CASCADE'), nullable=False)
+    students = db.relationship('Student', backref='course', lazy=True, cascade='all, delete-orphan')
 
 class Student(db.Model):
     id = db.Column(db.Integer, primary_key=True)

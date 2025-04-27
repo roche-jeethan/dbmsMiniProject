@@ -72,7 +72,16 @@ def init_db():
 
 if __name__ == '__main__':
     init_db()
-    print("Database initialized with test data!")
+    # Add debug statements
+    with app.app_context():
+        admin = Admin.query.filter_by(email='admin@example.com').first()
+        if admin:
+            print("\nAdmin account created successfully!")
+            print(f"Admin ID: {admin.id}")
+            print(f"Admin email: {admin.email}")
+        else:
+            print("\nWARNING: Admin account was not created!")
+
     print("\nLogin credentials:")
     print("Admin - Email: admin@example.com, Password: admin123")
     print("Lecturer - Email: john.smith@example.com, Password: lecturer123")
