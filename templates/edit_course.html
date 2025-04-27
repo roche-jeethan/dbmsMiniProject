@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Course - Smart Attendance</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <h1>Smart Attendance</h1>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2>Edit Course</h2>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" class="edit-course-form">
+            <div class="form-group">
+                <label for="name">Course Name:</label>
+                <input type="text" id="name" name="name" value="{{ course.name }}" required>
+            </div>
+            <div class="form-group">
+                <label for="year">Year:</label>
+                <input type="number" id="year" name="year" value="{{ course.year }}" required min="1" max="4">
+            </div>
+            <div class="form-group">
+                <label for="section">Section:</label>
+                <input type="text" id="section" name="section" value="{{ course.section }}" required>
+            </div>
+            <div class="form-group">
+                <label for="lecturer_id">Lecturer:</label>
+                <select id="lecturer_id" name="lecturer_id" required>
+                    {% for lecturer in lecturers %}
+                        <option value="{{ lecturer.id }}" {% if lecturer.id == course.lecturer_id %}selected{% endif %}>
+                            {{ lecturer.name }} ({{ lecturer.department }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit">Update Course</button>
+            <a href="{{ url_for('manage_courses') }}" class="button">Cancel</a>
+        </form>
+    </div>
+</body>
+</html>

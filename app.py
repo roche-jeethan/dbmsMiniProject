@@ -334,41 +334,91 @@ def manage_students(course_id):
 @app.route('/manage_lecturers', methods=['GET', 'POST'])
 @login_required
 def manage_lecturers():
-    if not isinstance(current_user, Admin):
-        flash('Unauthorized access')
-        return redirect(url_for('dashboard'))
+    try:
+        if not isinstance(current_user, Admin):
+            flash('Unauthorized access - Admin only', 'error')
+            return redirect(url_for('dashboard'))
+        
+        if request.method == 'POST':
+            try:
+                name = request.form.get('name')
+                email = request.form.get('email')
+                department = request.form.get('department')
+                
+                # Validate input
+                if not all([name, email, department]):
+                    flash('All fields are required', 'error')
+                    return redirect(url_for('manage_lecturers'))
+                
+                # Check if email already exists
+                existing_lecturer = Lecturer.query.filter_by(email=email).first()
+                if existing_lecturer:
+                    flash('Email already registered', 'error')
+                    return redirect(url_for('manage_lecturers'))
+                
+                password = generate_password_hash('lecturer123')  # Default password
+                lecturer = Lecturer(
+                    name=name,
+                    email=email,
+                    password=password,
+                    department=department
+                )
+                
+                db.session.add(lecturer)
+                db.session.commit()
+                flash('Lecturer added successfully', 'success')
+                
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Error adding lecturer: {str(e)}', 'error')
+                app.logger.error(f'Error adding lecturer: {str(e)}')
+        
+        lecturers = Lecturer.query.all()
+        return render_template('manage_lecturers.html', lecturers=lecturers)
     
-    if request.method == 'POST':
-        name = request.form.get('name')
-        email = request.form.get('email')
-        department = request.form.get('department')
-        password = generate_password_hash('lecturer123')  # Default password
-        
-        lecturer = Lecturer(name=name, email=email, password=password, department=department)
-        db.session.add(lecturer)
-        db.session.commit()
-        flash('Lecturer added successfully')
-        
-    lecturers = Lecturer.query.all()
-    return render_template('manage_lecturers.html', lecturers=lecturers)
+    except Exception as e:
+        app.logger.error(f'Error in manage_lecturers: {str(e)}')
+        flash('An unexpected error occurred', 'error')
+        return redirect(url_for('dashboard'))
 
 @app.route('/edit_lecturer/<int:lecturer_id>', methods=['GET', 'POST'])
 @login_required
 def edit_lecturer(lecturer_id):
     if not isinstance(current_user, Admin):
-        flash('Unauthorized access')
+        flash('Unauthorized access', 'error')
         return redirect(url_for('dashboard'))
-        
+
     lecturer = Lecturer.query.get_or_404(lecturer_id)
-    
+
     if request.method == 'POST':
-        lecturer.name = request.form.get('name')
-        lecturer.email = request.form.get('email')
-        lecturer.department = request.form.get('department')
-        db.session.commit()
-        flash('Lecturer updated successfully')
-        return redirect(url_for('manage_lecturers'))
-        
+        try:
+            lecturer.name = request.form.get('name')
+            new_email = request.form.get('email')
+            
+            # Check if email is being changed and if it's already in use
+            if new_email != lecturer.email:
+                existing_lecturer = Lecturer.query.filter_by(email=new_email).first()
+                if existing_lecturer:
+                    flash('Email already in use by another lecturer', 'error')
+                    return render_template('edit_lecturer.html', lecturer=lecturer)
+                lecturer.email = new_email
+
+            lecturer.department = request.form.get('department')
+            
+            # Update password only if provided
+            new_password = request.form.get('password')
+            if new_password:
+                lecturer.password = generate_password_hash(new_password)
+
+            db.session.commit()
+            flash('Lecturer updated successfully', 'success')
+            return redirect(url_for('manage_lecturers'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating lecturer: {str(e)}', 'error')
+            return render_template('edit_lecturer.html', lecturer=lecturer)
+
     return render_template('edit_lecturer.html', lecturer=lecturer)
 
 @app.route('/delete_lecturer/<int:lecturer_id>')
@@ -416,6 +466,81 @@ def edit_student(student_id):
         return redirect(url_for('manage_students', course_id=student.course_id))
         
     return render_template('edit_student.html', student=student)
+
+@app.route('/manage_courses', methods=['GET', 'POST'])
+@login_required
+def manage_courses():
+    if not isinstance(current_user, Admin):
+        flash('Unauthorized access', 'error')
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        try:
+            name = request.form.get('name')
+            year = request.form.get('year')
+            section = request.form.get('section')
+            lecturer_id = request.form.get('lecturer_id')
+
+            course = Course(
+                name=name,
+                year=int(year),
+                section=section,
+                lecturer_id=int(lecturer_id)
+            )
+            db.session.add(course)
+            db.session.commit()
+            flash('Course added successfully', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error adding course: {str(e)}', 'error')
+
+    lecturers = Lecturer.query.all()
+    courses = Course.query.all()
+    return render_template('manage_courses.html', courses=courses, lecturers=lecturers)
+
+@app.route('/edit_course/<int:course_id>', methods=['GET', 'POST'])
+@login_required
+def edit_course(course_id):
+    if not isinstance(current_user, Admin):
+        flash('Unauthorized access', 'error')
+        return redirect(url_for('dashboard'))
+
+    course = Course.query.get_or_404(course_id)
+    lecturers = Lecturer.query.all()
+
+    if request.method == 'POST':
+        try:
+            course.name = request.form.get('name')
+            course.year = int(request.form.get('year'))
+            course.section = request.form.get('section')
+            course.lecturer_id = int(request.form.get('lecturer_id'))
+            
+            db.session.commit()
+            flash('Course updated successfully', 'success')
+            return redirect(url_for('manage_courses'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating course: {str(e)}', 'error')
+
+    return render_template('edit_course.html', course=course, lecturers=lecturers)
+
+@app.route('/delete_course/<int:course_id>')
+@login_required
+def delete_course(course_id):
+    if not isinstance(current_user, Admin):
+        flash('Unauthorized access', 'error')
+        return redirect(url_for('dashboard'))
+
+    try:
+        course = Course.query.get_or_404(course_id)
+        db.session.delete(course)
+        db.session.commit()
+        flash('Course deleted successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting course: {str(e)}', 'error')
+
+    return redirect(url_for('manage_courses'))
 
 if __name__ == '__main__':
     with app.app_context():
