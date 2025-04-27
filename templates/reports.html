@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - Smart Attendance</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <h1>Smart Attendance</h1>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('manual_attendance') }}">Manual Attendance</a>
+            <a href="{{ url_for('reports') }}" class="active">Reports</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2>Attendance Reports</h2>
+        
+        <div class="report-filters">
+            <form id="reportForm">
+                <div class="form-group">
+                    <label for="course">Select Course:</label>
+                    <select id="course" name="course_id" required>
+                        <option value="">Select a course</option>
+                        {% for course in courses %}
+                            <option value="{{ course.id }}">{{ course.name }} - Year {{ course.year }}, Section {{ course.section }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="date_range">Date Range:</label>
+                    <select id="date_range" name="date_range">
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
+                </div>
+
+                <div id="custom_dates" style="display: none;">
+                    <div class="form-group">
+                        <label for="start_date">Start Date:</label>
+                        <input type="date" id="start_date" name="start_date">
+                    </div>
+                    <div class="form-group">
+                        <label for="end_date">End Date:</label>
+                        <input type="date" id="end_date" name="end_date">
+                    </div>
+                </div>
+
+                <button type="submit">Generate Report</button>
+                <button type="button" id="exportBtn" style="display: none;">Export to CSV</button>
+            </form>
+        </div>
+
+        <div class="report-content" style="display: none;">
+            <div class="statistics-cards">
+                <div class="card">
+                    <h4>Total Students</h4>
+                    <p id="totalStudents">0</p>
+                </div>
+                <div class="card">
+                    <h4>Present Today</h4>
+                    <p id="presentToday">0</p>
+                </div>
+                <div class="card">
+                    <h4>Attendance Rate</h4>
+                    <p id="attendanceRate">0%</p>
+                </div>
+            </div>
+
+            <div class="charts-container">
+                <div class="card">
+                    <h4>Daily Attendance Trend</h4>
+                    <canvas id="attendanceChart"></canvas>
+                </div>
+            </div>
+
+            <div class="attendance-list">
+                <h3>Attendance Details</h3>
+                <table id="attendanceTable">
+                    <thead>
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Name</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendanceData">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Handle date range selection
+        document.getElementById('date_range').addEventListener('change', function() {
+            const customDates = document.getElementById('custom_dates');
+            customDates.style.display = this.value === 'custom' ? 'block' : 'none';
+        });
+
+        // Handle form submission
+        document.getElementById('reportForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            fetch('/get_attendance_report?' + new URLSearchParams(formData))
+                .then(response => response.json())
+                .then(data => {
+                    document.querySelector('.report-content').style.display = 'block';
+                    document.getElementById('exportBtn').style.display = 'inline-block';
+                    
+                    // Update statistics
+                    document.getElementById('totalStudents').textContent = data.total_students;
+                    document.getElementById('presentToday').textContent = data.present_today;
+                    document.getElementById('attendanceRate').textContent = data.attendance_rate + '%';
+                    
+                    // Update attendance table
+                    const tbody = document.getElementById('attendanceData');
+                    tbody.innerHTML = '';
+                    data.attendance_list.forEach(record => {
+                        const row = tbody.insertRow();
+                        row.innerHTML = `
+                            <td>${record.student_id}</td>
+                            <td>${record.name}</td>
+                            <td>${record.date}</td>
+                            <td>${record.time}</td>
+                            <td>${record.status}</td>
+                        `;
+                    });
+                    
+                    // Update chart
+                    updateAttendanceChart(data.daily_trend);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        });
+
+        // Handle export
+        document.getElementById('exportBtn').addEventListener('click', function() {
+            const formData = new FormData(document.getElementById('reportForm'));
+            window.location.href = '/export_attendance_report?' + new URLSearchParams(formData);
+        });
+
+        // Chart initialization
+        let attendanceChart;
+        function updateAttendanceChart(data) {
+            const ctx = document.getElementById('attendanceChart').getContext('2d');
+            
+            if (attendanceChart) {
+                attendanceChart.destroy();
+            }
+            
+            attendanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.dates,
+                    datasets: [{
+                        label: 'Attendance',
+                        data: data.counts,
+                        borderColor: '#4CAF50',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

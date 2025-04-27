@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Students - Smart Attendance</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <h1>Smart Attendance</h1>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2>Manage Students - {{ course.name }}</h2>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-success">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="add-student-section">
+            <h3>Add New Student</h3>
+            <form method="POST" class="add-student-form">
+                <div class="form-group">
+                    <label for="name">Student Name:</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="roll_number">Roll Number:</label>
+                    <input type="text" id="roll_number" name="roll_number" required>
+                </div>
+                <button type="submit">Add Student</button>
+            </form>
+        </div>
+
+        <div class="students-list">
+            <h3>Current Students</h3>
+            <div class="card-grid">
+                {% for student in students %}
+                    <div class="card">
+                        <h4>{{ student.name }}</h4>
+                        <p>ID: {{ student.unique_id }}</p>
+                        <p>Roll Number: {{ student.roll_number }}</p>
+                        <img src="{{ url_for('static', filename='images/qr_' + student.unique_id + '.png') }}" 
+                             alt="QR Code" class="qr-code">
+                        <div class="card-actions">
+                            <a href="#" class="button download-qr" 
+                               onclick="downloadQR('{{ url_for('static', filename='images/qr_' + student.unique_id + '.png') }}', '{{ student.name }}_QR.png')">
+                               Download QR
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function downloadQR(url, filename) {
+            fetch(url)
+                .then(response => response.blob())
+                .then(blob => {
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                });
+        }
+    </script>
+</body>
+</html>
