@@ -454,18 +454,41 @@ def delete_student(student_id):
 def edit_student(student_id):
     student = Student.query.get_or_404(student_id)
     
+    # Check permissions
     if not isinstance(current_user, Admin) and student.course.lecturer_id != current_user.id:
-        flash('Unauthorized access')
+        flash('Unauthorized access', 'error')
         return redirect(url_for('dashboard'))
-        
+
     if request.method == 'POST':
-        student.name = request.form.get('name')
-        student.roll_number = request.form.get('roll_number')
-        db.session.commit()
-        flash('Student updated successfully')
-        return redirect(url_for('manage_students', course_id=student.course_id))
-        
-    return render_template('edit_student.html', student=student)
+        try:
+            student.name = request.form.get('name')
+            student.roll_number = request.form.get('roll_number')
+            student.year = int(request.form.get('year'))
+            student.section = request.form.get('section')
+            
+            # Only admin can change student's course
+            if isinstance(current_user, Admin):
+                new_course_id = int(request.form.get('course_id'))
+                if new_course_id != student.course_id:
+                    student.course_id = new_course_id
+                    # Update unique_id based on new course
+                    course = Course.query.get(new_course_id)
+                    student.unique_id = f'{course.year}{course.section}{student.roll_number}'
+
+            db.session.commit()
+            flash('Student updated successfully', 'success')
+            return redirect(url_for('manage_students', course_id=student.course_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating student: {str(e)}', 'error')
+
+    # Get all courses for admin to choose from
+    courses = Course.query.all() if isinstance(current_user, Admin) else None
+    return render_template('edit_student.html', 
+                         student=student, 
+                         courses=courses, 
+                         is_admin=isinstance(current_user, Admin))
 
 @app.route('/manage_courses', methods=['GET', 'POST'])
 @login_required

@@ -51,12 +51,12 @@
                         <p>Roll Number: {{ student.roll_number }}</p>
                         <img src="{{ url_for('static', filename='images/qr_' + student.unique_id + '.png') }}" 
                              alt="QR Code" class="qr-code">
-                        <!-- <div class="card-actions">
-                            <a href="#" class="button download-qr" 
-                               onclick="downloadQR('{{ url_for('static', filename='images/qr_' + student.unique_id + '.png') }}','{{ student.name }}_QR.png')">
-                               Download QR
-                            </a>
-                        </div> -->
+                        <div class="card-actions">
+                            <a href="{{ url_for('edit_student', student_id=student.id) }}" class="button">Edit</a>
+                            <a href="{{ url_for('delete_student', student_id=student.id) }}" 
+                               class="button delete" 
+                               onclick="return confirm('Are you sure you want to delete this student?')">Delete</a>
+                        </div>
                     </div>
                 {% endfor %}
             </div>
