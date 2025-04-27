@@ -60,6 +60,7 @@ def init_db():
             for i in range(1, 11):  # 10 students per course
                 student = Student(
                     name=f'Student {i} - {course.name}',
+                    roll_number=f'ROLL{i:03d}',  # Add this line
                     unique_id=f'{course.year}{course.section}{i:03d}',
                     course_id=course.id,
                     year=course.year,

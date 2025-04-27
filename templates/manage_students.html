@@ -51,12 +51,12 @@
                         <p>Roll Number: {{ student.roll_number }}</p>
                         <img src="{{ url_for('static', filename='images/qr_' + student.unique_id + '.png') }}" 
                              alt="QR Code" class="qr-code">
-                        <div class="card-actions">
+                        <!-- <div class="card-actions">
                             <a href="#" class="button download-qr" 
-                               onclick="downloadQR('{{ url_for('static', filename='images/qr_' + student.unique_id + '.png') }}', '{{ student.name }}_QR.png')">
+                               onclick="downloadQR('{{ url_for('static', filename='images/qr_' + student.unique_id + '.png') }}','{{ student.name }}_QR.png')">
                                Download QR
                             </a>
-                        </div>
+                        </div> -->
                     </div>
                 {% endfor %}
             </div>
