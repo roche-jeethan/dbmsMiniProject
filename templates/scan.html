@@ -44,6 +44,13 @@
             margin: 1rem 0;
             display: none;
         }
+
+        .countdown {
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: center;
+            margin: 1rem 0;
+        }
     </style>
 </head>
 <body>
@@ -90,9 +97,23 @@
         let html5QrCode = null;
         let isScanning = false;
 
+        // Add these variables at the start of your script section
+        let sessionTimer = null;
+        const SESSION_TIMEOUT = 10 * 60 * 1000; // 10 minutes in milliseconds
+
+        // Update the initializeScanner function
         function initializeScanner() {
             html5QrCode = new Html5Qrcode("qr-reader");
             startScanning();
+            
+            // Start the session timer
+            sessionTimer = setTimeout(() => {
+                stopScanning();
+                showAlert('info', 'Attendance session timeout reached (10 minutes). Session ended.');
+            }, SESSION_TIMEOUT);
+
+            // Add a countdown display
+            startCountdown(SESSION_TIMEOUT);
         }
 
         function startScanning() {
@@ -140,10 +161,16 @@
             }
         }
 
+        // Update the stopScanning function
         function stopScanning() {
             if (html5QrCode) {
                 html5QrCode.stop().then(() => {
                     isScanning = false;
+                    // Clear the session timer
+                    if (sessionTimer) {
+                        clearTimeout(sessionTimer);
+                        sessionTimer = null;
+                    }
                     window.location.href = "{{ url_for('dashboard') }}";
                 }).catch((err) => {
                     console.error("Error stopping scanner:", err);
@@ -258,6 +285,26 @@
             setTimeout(() => {
                 messageDiv.style.display = 'none';
             }, 3000);
+        }
+
+        function startCountdown(duration) {
+            const countdownDiv = document.createElement('div');
+            countdownDiv.id = 'countdown';
+            countdownDiv.className = 'countdown';
+            document.querySelector('.qr-scanner').insertBefore(countdownDiv, document.getElementById('qr-reader'));
+
+            const updateCountdown = () => {
+                const minutes = Math.floor(duration / 60000);
+                const seconds = Math.floor((duration % 60000) / 1000);
+                countdownDiv.textContent = `Session ends in: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+                duration -= 1000;
+
+                if (duration >= 0) {
+                    setTimeout(updateCountdown, 1000);
+                }
+            };
+
+            updateCountdown();
         }
     </script>
 </body>

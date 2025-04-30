@@ -55,6 +55,16 @@ body {
     padding: 0 1rem;
 }
 
+.countdown {
+    background-color: #f8f9fa;
+    padding: 0.5rem;
+    text-align: center;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    font-weight: bold;
+    color: #dc3545;
+}
+
 .login-container {
     max-width: 400px;
     margin: 4rem auto;
