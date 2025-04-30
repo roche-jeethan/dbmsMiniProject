@@ -45,7 +45,9 @@
             </div>
             <div class="form-actions">
                 <button type="submit">Update Lecturer</button>
-                <a href="{{ url_for('manage_lecturers') }}" class="button cancel">Cancel</a>
+                <button class="button delete">
+                    <a href="{{ url_for('manage_lecturers') }}" class="button delete">Cancel</a>
+                </button>  
             </div>
         </form>
     </div>

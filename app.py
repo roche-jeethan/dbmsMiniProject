@@ -431,13 +431,25 @@ def edit_lecturer(lecturer_id):
 @login_required
 def delete_lecturer(lecturer_id):
     if not isinstance(current_user, Admin):
-        flash('Unauthorized access')
+        flash('Unauthorized access', 'error')
         return redirect(url_for('dashboard'))
         
-    lecturer = Lecturer.query.get_or_404(lecturer_id)
-    db.session.delete(lecturer)
-    db.session.commit()
-    flash('Lecturer deleted successfully')
+    try:
+        lecturer = Lecturer.query.get_or_404(lecturer_id)
+        
+        # Delete all associated attendance records first
+        for course in lecturer.courses:
+            Attendance.query.filter_by(course_id=course.id).delete()
+        
+        # Now delete the lecturer (this will cascade to courses and students)
+        db.session.delete(lecturer)
+        db.session.commit()
+        flash('Lecturer and associated data deleted successfully', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting lecturer: {str(e)}', 'error')
+        
     return redirect(url_for('manage_lecturers'))
 
 @app.route('/delete_student/<int:student_id>')

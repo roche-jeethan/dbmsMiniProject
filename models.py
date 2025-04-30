@@ -30,16 +30,16 @@ class Student(db.Model):
     name = db.Column(db.String(100), nullable=False)
     roll_number = db.Column(db.String(20), nullable=False)
     unique_id = db.Column(db.String(20), unique=True, nullable=False)
-    course_id = db.Column(db.Integer, db.ForeignKey('course.id'), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey('course.id', ondelete='CASCADE'), nullable=False)
     year = db.Column(db.Integer, nullable=False)
     section = db.Column(db.String(10), nullable=False)
-    attendances = db.relationship('Attendance', backref='student', lazy=True)
+    attendances = db.relationship('Attendance', backref='student', lazy=True, cascade='all, delete-orphan')
 
 class Attendance(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
-    course_id = db.Column(db.Integer, db.ForeignKey('course.id'), nullable=False)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id', ondelete='CASCADE'), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey('course.id', ondelete='CASCADE'), nullable=False)
     date = db.Column(db.Date, nullable=False, default=datetime.utcnow)
     time = db.Column(db.Time, nullable=False, default=datetime.utcnow)
-    status = db.Column(db.String(10), nullable=False, default='present')  # present/absent
-    method = db.Column(db.String(10), nullable=False, default='auto')  # auto/manual
+    status = db.Column(db.String(10), nullable=False, default='present')
+    method = db.Column(db.String(10), nullable=False, default='auto')
