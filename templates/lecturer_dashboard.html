@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Smart Attendance</title>
+    <title>Lecturer Dashboard - Smart Attendance</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <nav class="navbar">
         <h1>Smart Attendance</h1>
         <div class="nav-links">
-            <a href="{{ url_for('dashboard') }}" class="active">Dashboard</a>
+            <a href="{{ url_for('lecturer_dashboard') }}" class="active">Dashboard</a>
             <a href="{{ url_for('manual_attendance') }}">Manual Attendance</a>
             <a href="{{ url_for('reports') }}">Reports</a>
             <a href="{{ url_for('logout') }}">Logout</a>
@@ -18,25 +18,20 @@
     </nav>
 
     <div class="container">
-        <h2>Welcome, Administrator ({{ current_user.email }})</h2>
-        
-        <div class="admin-section">
-            <h3>Administration</h3>
-            <div class="admin-actions">
-                <a href="{{ url_for('manage_lecturers') }}" class="button">Manage Lecturers</a>
-                <a href="{{ url_for('manage_courses') }}" class="button">Manage Courses</a>
-            </div>
+        <h2>Welcome, {{ current_user.name }}</h2>
+        <div class="lecturer-info">
+            <p>Department: {{ current_user.department }}</p>
         </div>
 
         <div class="courses-section">
-            <h3>All Courses</h3>
+            <h3>My Courses</h3>
             <div class="card-grid">
                 {% for course in courses %}
                     <div class="card">
                         <h4>{{ course.name }}</h4>
                         <p>Year: {{ course.year }}</p>
                         <p>Section: {{ course.section }}</p>
-                        <p>Lecturer: {{ course.lecturer.name }}</p>
+                        <p>Department: {{ current_user.department }}</p>
                         <div class="card-actions">
                             <a href="{{ url_for('scan', course_id=course.id) }}" class="button">Take Attendance</a>
                             <a href="{{ url_for('manage_students', course_id=course.id) }}" class="button">Manage Students</a>

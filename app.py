@@ -36,54 +36,71 @@ def load_user(user_id):
 def index():
     return redirect(url_for('login'))
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=['GET'])
 def login():
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        user_type = request.form.get('user_type')
-
-        if not all([email, password, user_type]):
-            flash('Please fill in all fields')
-            return render_template('login.html')
-
-        user = None
-        if user_type == 'admin':
-            user = Admin.query.filter_by(email=email).first()
-            if not user:
-                flash('Admin account not found')
-                return render_template('login.html')
-        else:
-            user = Lecturer.query.filter_by(email=email).first()
-            if not user:
-                flash('Lecturer account not found')
-                return render_template('login.html')
-
-        if user and check_password_hash(user.password, password):
-            login_user(user)
-            return redirect(url_for('dashboard'))
-        else:
-            flash('Invalid password')
-            
     return render_template('login.html')
+
+@app.route('/admin_login', methods=['POST'])
+def admin_login():
+    email = request.form.get('email')
+    password = request.form.get('password')
+
+    if not all([email, password]):
+        flash('Please fill in all fields')
+        return redirect(url_for('login'))
+
+    admin = Admin.query.filter_by(email=email).first()
+    if not admin:
+        flash('Admin account not found')
+        return redirect(url_for('login'))
+
+    if check_password_hash(admin.password, password):
+        login_user(admin)
+        return redirect(url_for('dashboard'))  # Admin sees dashboard.html
+    else:
+        flash('Invalid password')
+        return redirect(url_for('login'))
+
+@app.route('/lecturer_login', methods=['POST'])
+def lecturer_login():
+    email = request.form.get('email')
+    password = request.form.get('password')
+
+    if not all([email, password]):
+        flash('Please fill in all fields')
+        return redirect(url_for('login'))
+
+    lecturer = Lecturer.query.filter_by(email=email).first()
+    if not lecturer:
+        flash('Lecturer account not found')
+        return redirect(url_for('login'))
+
+    if check_password_hash(lecturer.password, password):
+        login_user(lecturer)
+        return redirect(url_for('lecturer_dashboard'))  # Lecturer sees lecturer_dashboard.html
+    else:
+        flash('Invalid password')
+        return redirect(url_for('login'))
 
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    try:
-        if isinstance(current_user, Admin):
-            courses = Course.query.all()
-            return render_template('dashboard.html', courses=courses, is_admin=True)
-        else:
-            # Add debug logging
-            print(f"Lecturer ID: {current_user.id}")
-            courses = Course.query.filter_by(lecturer_id=current_user.id).all()
-            print(f"Found courses: {[course.name for course in courses]}")
-            return render_template('dashboard.html', courses=courses, is_admin=False)
-    except Exception as e:
-        print(f"Error in dashboard: {str(e)}")
-        flash('Error loading courses', 'error')
-        return render_template('dashboard.html', courses=[], is_admin=False)
+    if not isinstance(current_user, Admin):
+        flash('Unauthorized access')
+        return redirect(url_for('lecturer_dashboard'))
+    
+    courses = Course.query.all()
+    return render_template('dashboard.html', courses=courses)
+
+@app.route('/lecturer_dashboard')
+@login_required
+def lecturer_dashboard():
+    if not isinstance(current_user, Lecturer):
+        flash('Unauthorized access')
+        return redirect(url_for('dashboard'))
+    
+    courses = Course.query.filter_by(lecturer_id=current_user.id).all()
+    return render_template('lecturer_dashboard.html', courses=courses)
 
 @app.route('/scan/<int:course_id>')
 @login_required
@@ -431,25 +448,13 @@ def edit_lecturer(lecturer_id):
 @login_required
 def delete_lecturer(lecturer_id):
     if not isinstance(current_user, Admin):
-        flash('Unauthorized access', 'error')
+        flash('Unauthorized access')
         return redirect(url_for('dashboard'))
         
-    try:
-        lecturer = Lecturer.query.get_or_404(lecturer_id)
-        
-        # Delete all associated attendance records first
-        for course in lecturer.courses:
-            Attendance.query.filter_by(course_id=course.id).delete()
-        
-        # Now delete the lecturer (this will cascade to courses and students)
-        db.session.delete(lecturer)
-        db.session.commit()
-        flash('Lecturer and associated data deleted successfully', 'success')
-        
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Error deleting lecturer: {str(e)}', 'error')
-        
+    lecturer = Lecturer.query.get_or_404(lecturer_id)
+    db.session.delete(lecturer)
+    db.session.commit()
+    flash('Lecturer deleted successfully')
     return redirect(url_for('manage_lecturers'))
 
 @app.route('/delete_student/<int:student_id>')
