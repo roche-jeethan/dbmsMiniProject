@@ -250,6 +250,19 @@ button:hover {
     background-color: #5a6268;
 }
 
+.admin-actions .button {
+    background-color: #45a049;  /* darker shade of green */
+    color: white;
+    text-decoration: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.admin-actions .button:hover {
+    background-color: #1B5E20;  /* even darker shade for hover */
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     .attendance-section {
