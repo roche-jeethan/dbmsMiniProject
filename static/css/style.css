@@ -71,6 +71,10 @@ body {
     justify-content: space-between;
 }
 
+.text-center {
+    align-items: center;
+    justify-items: center;
+}
 .login-form {
     flex: 1;
     padding: 1.5rem;

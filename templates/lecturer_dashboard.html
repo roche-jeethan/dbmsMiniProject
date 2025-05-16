@@ -18,10 +18,7 @@
     </nav>
 
     <div class="container">
-        <h2>Welcome, {{ current_user.name }}</h2>
-        <div class="lecturer-info">
-            <p>Department: {{ current_user.department }}</p>
-        </div>
+        <h2>Welcome to the Lecturer Dashboard</h2>
 
         <div class="courses-section">
             <h3>My Courses</h3>
@@ -31,7 +28,6 @@
                         <h4>{{ course.name }}</h4>
                         <p>Year: {{ course.year }}</p>
                         <p>Section: {{ course.section }}</p>
-                        <p>Department: {{ current_user.department }}</p>
                         <div class="card-actions">
                             <a href="{{ url_for('scan', course_id=course.id) }}" class="button">Take Attendance</a>
                             <a href="{{ url_for('manage_students', course_id=course.id) }}" class="button">Manage Students</a>

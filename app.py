@@ -56,7 +56,8 @@ def admin_login():
 
     if check_password_hash(admin.password, password):
         login_user(admin)
-        return redirect(url_for('dashboard'))  # Admin sees dashboard.html
+        # Direct to admin dashboard
+        return redirect(url_for('dashboard'))
     else:
         flash('Invalid password')
         return redirect(url_for('login'))
@@ -77,7 +78,8 @@ def lecturer_login():
 
     if check_password_hash(lecturer.password, password):
         login_user(lecturer)
-        return redirect(url_for('lecturer_dashboard'))  # Lecturer sees lecturer_dashboard.html
+        # Direct to lecturer dashboard
+        return redirect(url_for('lecturer_dashboard'))
     else:
         flash('Invalid password')
         return redirect(url_for('login'))
@@ -85,20 +87,18 @@ def lecturer_login():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    if not isinstance(current_user, Admin):
-        flash('Unauthorized access')
-        return redirect(url_for('lecturer_dashboard'))
-    
+    # if not isinstance(current_user, Admin):
+    #     # If not admin, redirect to lecturer dashboard
+    #     return redirect(url_for('lecturer_dashboard'))
     courses = Course.query.all()
     return render_template('dashboard.html', courses=courses)
 
 @app.route('/lecturer_dashboard')
 @login_required
 def lecturer_dashboard():
-    if not isinstance(current_user, Lecturer):
-        flash('Unauthorized access')
-        return redirect(url_for('dashboard'))
-    
+    # if not isinstance(current_user, Lecturer):
+    #     # If not lecturer, redirect to admin dashboard
+    #     return redirect(url_for('dashboard'))
     courses = Course.query.filter_by(lecturer_id=current_user.id).all()
     return render_template('lecturer_dashboard.html', courses=courses)
 
@@ -108,7 +108,7 @@ def scan(course_id):
     course = Course.query.get_or_404(course_id)
     if isinstance(current_user, Lecturer) and course.lecturer_id != current_user.id:
         flash('Unauthorized access')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('lecturer_dashboard'))
     return render_template('scan.html', course=course)
 
 @app.route('/mark_attendance', methods=['POST'])
